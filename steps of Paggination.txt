@@ -1,0 +1,76 @@
+
+
+Step 1 :- define Globally
+
+    private lateinit var queries: MutableMap<String, Any>
+
+    private val pageStart = 1
+    private var isLoading = false
+    private var isLastPage = false
+    private var totalPages = 0
+    private var currentPage: Int = pageStart
+
+
+Step 2 :- initAdapter()
+
+     private fun initAdapter() {
+        adapter = EventOrganiseByMeAdapter(requireActivity(), eventList, onActionListener)
+        val layoutManager =
+            LinearLayoutManager(requireActivity(), LinearLayoutManager.HORIZONTAL, false)
+        binding.rvOrganisedList.layoutManager = layoutManager;
+        binding.rvOrganisedList.adapter = adapter
+        binding.rvOrganisedList.addOnScrollListener(object : CustomScrollListener(layoutManager) {
+
+            override fun loadMoreItems() {
+                this@HomeEventFragment.isLoading = true
+                currentPage += 1
+                queries["pageNo"] = currentPage.toString()
+
+                presentor.getAllOrganisedEvents(queries)
+            }
+
+            override val totalPageCount: Int get() = totalPages
+
+            override val isLastPage: Boolean get() = this@HomeEventFragment.isLastPage
+
+            override val isLoading: Boolean get() = this@HomeEventFragment.isLoading
+        })
+    }
+
+
+Step 3 :- when you hit Api
+
+ 	isLoading = false
+        isLastPage = false
+        currentPage = pageStart
+
+        queries = mutableMapOf()
+        queries["organiserId"] = preferenceHelper.getUserId().toString()
+        queries["eventStatusArray"] = "completed,cancelled"
+        queries["isPublished"] = true
+        queries["pageNo"] = currentPage.toString()
+        queries["pageSize"] = 10
+
+
+
+Step 4 :- enter Code on Api Response
+
+     if (currentPage == pageStart) {
+            adapter.clear()
+            adapter.addAll(response.items!!)
+            totalPages = Utility.getTotalPages(response.totalRecords, response.pageSize)
+            if (currentPage < totalPages) {
+                adapter.addLoadingFooter()
+            } else {
+                isLastPage = true
+            }
+        } else {
+            adapter.removeLoadingFooter()
+            isLoading = false
+            adapter.addAll(response.items!!)
+            if (currentPage != totalPages) {
+                adapter.addLoadingFooter()
+            } else {
+                isLastPage = true
+            }
+        }
